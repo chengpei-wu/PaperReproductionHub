@@ -10,11 +10,12 @@
 - torch
 - dgl
 
-## How to run
+## Implementation
 
-`
-python train.py
-`
+- Version 1: Implementation based on Dropping all edges during training GNN.
+- Version 2: Implementation based on defining new GNN layer, which allows to use weight matrix only.
+- Run code: `python train_v1.py` `python train_v2.py`
+- Note: all codes based on [DGL](https://github.com/dmlc/dgl)
 
 ## Summary
 

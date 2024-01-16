@@ -1,19 +1,17 @@
 import argparse
-import copy
 
 import dgl
-from dgl import DropEdge
 import torch
 import torch.nn as nn
 from dgl import AddSelfLoop
 from dgl.data import CiteseerGraphDataset, CoraGraphDataset, PubmedGraphDataset
-from model import GCN
+from model import ControlledGCN, GCN
 
 
-def evaluate(g, features, labels, mask, model):
+def evaluate(g, features, labels, mask, model, allow_message_passing):
     model.eval()
     with torch.no_grad():
-        logits = model(g, features)
+        logits = model(g, features, allow_message_passing)
         logits = logits[mask]
         labels = labels[mask]
         _, indices = torch.max(logits, dim=1)
@@ -42,9 +40,6 @@ def train(
     # training loop
 
     allow_message_passing = False
-    original_g = copy.deepcopy(g)
-    drop = DropEdge(p=1)
-    g = drop(g)
     if self_loop:
         g = dgl.add_self_loop(g)
     for epoch in range(max_epoch):
@@ -52,27 +47,16 @@ def train(
         if epoch >= int(max_epoch * use_massage_passing) and not allow_message_passing:
             allow_message_passing = True
             optimizer.lr = lr
-            g = original_g
 
-        logits = model(g, features)
+        logits = model(g, features, allow_message_passing)
         loss = loss_fcn(logits[train_mask], labels[train_mask])
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         train_acc = evaluate(
-            g,
-            features,
-            labels,
-            train_mask,
-            model,
+            g, features, labels, train_mask, model, allow_message_passing
         )
-        val_acc = evaluate(
-            g,
-            features,
-            labels,
-            val_mask,
-            model,
-        )
+        val_acc = evaluate(g, features, labels, val_mask, model, allow_message_passing)
         print(
             "\r",
             f"Epoch {epoch:05d} | Loss {loss.item():.4f} | Train Acc. {train_acc:.4f} | Val. Acc. {val_acc:.4f}",
@@ -81,15 +65,15 @@ def train(
         )
 
 
-# Implementation based on Dropping all edges during training GNN.
+# Implementation based on defining new GNN layer, which allows to use weight matrix only.
 
 if __name__ == "__main__":
     args_list = [
-        ("--dataset", "pubmed"),
+        ("--dataset", "cora"),
         (
             "--self_loop",
             True,
-        ),  # must add self loop, if not the feats will be zeros (when drop all edges) during training.
+        ),  # must add self loop, if not, the feats will be zeros (when drop all edges) during training.
         ("--datatype", "float"),
         ("--num_layers", 2),
         ("--hid_size", 16),
@@ -145,7 +129,7 @@ if __name__ == "__main__":
     in_size = features.shape[1]
     out_size = data.num_classes
 
-    model = GCN(in_size, args.hid_size, out_size, args.num_layers).to(device)
+    model = ControlledGCN(in_size, args.hid_size, out_size, args.num_layers).to(device)
 
     # convert model and graph to bfloat16 if needed
     if args.datatype == "bfloat16":
@@ -167,21 +151,15 @@ if __name__ == "__main__":
         self_loop=args.self_loop,
     )
 
-    original_g = copy.deepcopy(g)
-    drop = DropEdge(p=1)
-    g = drop(g)
-    if args.self_loop:
-        g = dgl.add_self_loop(g)
-
     # test the model without message passing
-    acc1 = evaluate(g, features, labels, masks[2], model)
+    acc1 = evaluate(g, features, labels, masks[2], model, False)
 
     # test the model with message passing
-    acc2 = evaluate(original_g, features, labels, masks[2], model)
+    acc2 = evaluate(g, features, labels, masks[2], model, True)
     print("\n\n")
     if 0 < args.when_message_passing < 1:
         print(
-            f"Training MLP for GNN initial training: {int(args.max_epoch* (args.when_message_passing))} epochs for MLP, the last {int(args.max_epoch* (1-args.when_message_passing))} epochs adding message passing."
+            f"Training MLP for GNN initial training: {int(args.max_epoch * args.when_message_passing)} epochs for MLP, the last {int(args.max_epoch * (1 - args.when_message_passing))} epochs adding message passing."
         )
     elif args.when_message_passing == 0:
         print(f"Training GNN only.")
