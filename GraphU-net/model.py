@@ -6,32 +6,34 @@ from dgl.nn.pytorch import GraphConv
 
 
 class GraphUnet(nn.Module):
-    def __init__(self, in_feats, hidden_feats, out_feats, ks):
+    def __init__(self, in_feats, embed_feats, hidden_feats, out_feats, ks):
         super().__init__()
         self.in_feats = in_feats
+        self.embed_feats = embed_feats
         self.hidden_feats = hidden_feats
         self.out_feats = out_feats
         self.ks = ks
-        self.gpools = nn.ModuleList(
-            [
-                gPool(hidden_feats),
-                gPool(hidden_feats),
-            ]
+        self.num_layers = len(ks)
+
+        self.embed_gcn = GraphConv(
+            in_feats,
+            embed_feats,
+            activation=F.relu,
+            allow_zero_in_degree=True,
         )
-        self.gunpools = nn.ModuleList([gUnpool(), gUnpool()])
-        self.gcn_layers = nn.ModuleList()
-        for i in range(4):
+        self.encoder_gcn_layers = nn.ModuleList()
+        for i in range(self.num_layers):
             if i == 0:
-                self.gcn_layers.append(
+                self.encoder_gcn_layers.append(
                     GraphConv(
-                        in_feats,
+                        embed_feats,
                         hidden_feats,
                         activation=F.relu,
                         allow_zero_in_degree=True,
                     )
                 )
             else:
-                self.gcn_layers.append(
+                self.encoder_gcn_layers.append(
                     GraphConv(
                         hidden_feats,
                         hidden_feats,
@@ -39,15 +41,31 @@ class GraphUnet(nn.Module):
                         allow_zero_in_degree=True,
                     )
                 )
-        self.gcn_layers.append(
-            GraphConv(
-                hidden_feats,
-                out_feats,
-                activation=F.relu,
-                allow_zero_in_degree=True,
-            )
+
+        self.bottom_gcn = GraphConv(
+            hidden_feats, hidden_feats, activation=F.relu, allow_zero_in_degree=True
         )
-        self.dropout = nn.Dropout(0.5)
+        self.decoder_gcn_layers = nn.ModuleList()
+        for i in range(self.num_layers):
+            if i == self.num_layers - 1:
+                self.decoder_gcn_layers.append(
+                    GraphConv(hidden_feats, out_feats, allow_zero_in_degree=True)
+                )
+            else:
+                self.decoder_gcn_layers.append(
+                    GraphConv(
+                        hidden_feats,
+                        hidden_feats,
+                        activation=F.relu,
+                        allow_zero_in_degree=True,
+                    )
+                )
+        self.gpools = nn.ModuleList(
+            [gPool(hidden_feats) for _ in range(self.num_layers)]
+        )
+        self.gunpools = nn.ModuleList([gUnpool() for _ in range(self.num_layers)])
+
+        self.dropout = nn.Dropout(0.3)
 
     def forward(self, g, features):
         h = features
@@ -55,21 +73,28 @@ class GraphUnet(nn.Module):
         hidden_reps = []
         gpool_nids = []
 
-        # down sampling
-        for i in range(2):
+        # embed into low-dimensional feats
+        h = self.embed_gcn(g, h)
+        ori_h = h.clone()
+
+        # encoder
+        for i in range(self.num_layers):
+            h = self.dropout(h)
             ori_graphs.insert(0, g.clone())
-            h = self.gcn_layers[i](g, h)
+            h = self.encoder_gcn_layers[i](g, h)
             hidden_reps.insert(0, h)
-            g, h, nids = self.gpools[i](g, h, (self.ks[i] * h.shape[0]))
+            g, h, nids = self.gpools[i](g, h, self.ks[i])
             gpool_nids.insert(0, nids)
 
-        h = self.gcn_layers[2](g, h)
-
-        # up sampling
-        for i in range(2):
+        # bottom GCN
+        h = self.dropout(h)
+        h = self.bottom_gcn(g, h)
+        # decoder
+        for i in range(self.num_layers):
             g, h = self.gunpools[i](ori_graphs[i], h, hidden_reps[i], gpool_nids[i])
             h = h + hidden_reps[i]
-            h = self.gcn_layers[i + 3](g, h)
+            h = self.dropout(h)
+            h = self.decoder_gcn_layers[i](g, h)
 
         return h
 
@@ -82,7 +107,7 @@ class gPool(nn.Module):
     def forward(self, g, h, top_k):
         scores = F.sigmoid(self.projection(h))
         g.ndata["scores"] = scores
-        _, node_ids = dgl.topk_nodes(g, "scores", int(top_k), sortby=0)
+        _, node_ids = dgl.topk_nodes(g, "scores", top_k, sortby=0)
         node_ids = torch.squeeze(node_ids)
         rst_g = dgl.node_subgraph(g, node_ids.int())
         new_h = h[node_ids]

@@ -66,9 +66,10 @@ if __name__ == "__main__":
     args_list = [
         ("--dataset", "cora"),
         ("--datatype", "float"),
-        ("--hid_size", 16),
+        ("--hid_size", 512),
+        ("--embed_size", 48),
         ("--lr", 1e-2),
-        ("--max_epoch", 500),
+        ("--max_epoch", 200),
     ]
 
     for arg_name, default in args_list:
@@ -107,7 +108,13 @@ if __name__ == "__main__":
         masks = split_idx["train"], split_idx["valid"], split_idx["test"]
     in_size = features.shape[1]
     out_size = data.num_classes
-    model = GraphUnet(in_size, args.hid_size, out_size, [0.8, 0.6]).to(device)
+    model = GraphUnet(
+        in_feats=in_size,
+        embed_feats=args.embed_size,
+        hidden_feats=args.hid_size,
+        out_feats=out_size,
+        ks=[2000, 1000, 500],
+    ).to(device)
 
     # convert model and graph to bfloat16 if needed
     if args.datatype == "bfloat16":
