@@ -4,4 +4,6 @@ This repository is created for code reproduction of classical deep models or int
 
 ## papers reproductions
 
-- [Graph Neural Networks are Inherently Good Generalizers: Insights by Bridging GNNs and MLPs, ICLR 2023](PMLP/README.md)
+- [Graph Neural Networks are Inherently Good Generalizers: Insights by Bridging GNNs and MLPs](PMLP/README.md)
+- [Graph U-Nets](GraphU-net/README.md)
+- [Variational Graph Auto-Encoders](VGAE/README.md)
