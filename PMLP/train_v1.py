@@ -2,11 +2,14 @@ import argparse
 import copy
 
 import dgl
-from dgl import DropEdge
 import torch
 import torch.nn as nn
 from dgl import AddSelfLoop
-from dgl.data import CiteseerGraphDataset, CoraGraphDataset, PubmedGraphDataset
+from dgl import DropEdge
+from dgl.data import CiteseerGraphDataset
+from dgl.data import CoraGraphDataset
+from dgl.data import PubmedGraphDataset
+
 from model import GCN
 
 

@@ -1,11 +1,12 @@
 import argparse
 
 import dgl
-import numpy as np
 import torch
 import torch.nn as nn
 from dgl import AddSelfLoop
-from dgl.data import CiteseerGraphDataset, CoraGraphDataset, PubmedGraphDataset
+from dgl.data import CiteseerGraphDataset
+from dgl.data import CoraGraphDataset
+from dgl.data import PubmedGraphDataset
 from ogb.nodeproppred import DglNodePropPredDataset
 
 from model import GraphUnet

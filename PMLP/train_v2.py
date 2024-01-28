@@ -4,8 +4,11 @@ import dgl
 import torch
 import torch.nn as nn
 from dgl import AddSelfLoop
-from dgl.data import CiteseerGraphDataset, CoraGraphDataset, PubmedGraphDataset
-from model import ControlledGCN, GCN
+from dgl.data import CiteseerGraphDataset
+from dgl.data import CoraGraphDataset
+from dgl.data import PubmedGraphDataset
+
+from model import ControlledGCN
 
 
 def evaluate(g, features, labels, mask, model, allow_message_passing):

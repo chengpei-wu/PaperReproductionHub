@@ -3,7 +3,9 @@ from torch import nn
 from torch.optim.lr_scheduler import LambdaLR
 
 from Transformer.model import Transformer
-from Transformer.train_tools import Batch, run_epoch, subsequent_mask
+from Transformer.train_tools import Batch
+from Transformer.train_tools import run_epoch
+from Transformer.train_tools import subsequent_mask
 
 
 def data_gen(V, batch_size, nbatches):

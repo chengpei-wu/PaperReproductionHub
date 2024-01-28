@@ -1,15 +1,11 @@
-import dgl.sparse
-import networkx as nx
-import numpy as np
 import torch
+import torch.nn.functional as F
+from dataset import SyntheticDataset
 from dgl.dataloading import GraphDataLoader
-from matplotlib import pyplot as plt
-from torch import nn, optim
+from torch import optim
 from torch.utils.data import random_split
 
-from dataset import SyntheticDataset
 from model import VGAE
-import torch.nn.functional as F
 
 
 def kl_divergence(z, mu, log_sigma):

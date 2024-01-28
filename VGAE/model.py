@@ -1,7 +1,7 @@
-import torch.nn
-import torch.nn.functional as F
-import torch.nn as nn
 import dgl.nn.pytorch as dglnn
+import torch.nn
+import torch.nn as nn
+import torch.nn.functional as F
 
 
 class VGAE(nn.Module):
