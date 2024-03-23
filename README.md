@@ -8,3 +8,4 @@ This repository is created for code reproduction of classical deep models or int
 - [Graph U-Nets](GraphU-net/README.md)
 - [Variational Graph Auto-Encoders](VGAE/README.md)
 - [Attention Is All You Need](Transformer/README.md)
+- [Auto-Encoding Variational Bayes](VAE/README.md)
