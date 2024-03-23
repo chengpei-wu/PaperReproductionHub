@@ -3,35 +3,38 @@ from torch import nn
 from torch.optim.lr_scheduler import LambdaLR
 
 from Transformer.model import Transformer
-from Transformer.train_tools import Batch
-from Transformer.train_tools import run_epoch
-from Transformer.train_tools import subsequent_mask
+from Transformer.train_utils import Batch
+from Transformer.train_utils import run_epoch
+from Transformer.train_utils import subsequent_mask
 
 
-def data_gen(V, batch_size, nbatches):
-    "Generate random data for a src-tgt copy task."
+def data_gen(V, batch_size, nbatches, device):
+    # Generate random data for a src-tgt copy task.
     for i in range(nbatches):
         data = torch.randint(1, V, size=(batch_size, 10))
         data[:, 0] = 1
         src = data.requires_grad_(False).clone().detach()
         tgt = data.requires_grad_(False).clone().detach()
-        yield Batch(src, tgt, 0)
+        yield Batch(src, tgt, 0, device=device)
 
 
 class SimpleLossCompute:
     "A simple loss compute and train function."
 
-    def __init__(self, generator, criterion):
-        self.generator = generator
+    def __init__(self, criterion):
         self.criterion = criterion
 
     def __call__(self, x, y, norm):
-        x = self.generator(x)
         sloss = (
             self.criterion(x.contiguous().view(-1, x.size(-1)), y.contiguous().view(-1))
             / norm
         )
         return sloss.data * norm, sloss
+
+
+# 0,1,2,3,4,5
+# 0,1,2,3,4
+# 1,2,3,4,5
 
 
 def greedy_decode(model, src, src_mask, max_len, start_symbol):
@@ -108,7 +111,7 @@ class DummyScheduler:
 
 
 if __name__ == "__main__":
-    # Train the simple copy task.
+    # Train the simple copy task for transformer.
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     def example_simple_model():
@@ -126,27 +129,25 @@ if __name__ == "__main__":
             ),
         )
 
-        batch_size = 80
-        for epoch in range(20):
+        batch_size = 256
+        for epoch in range(30):
             model.train()
             run_epoch(
-                data_gen(V, batch_size, 20),
+                data_gen(V, batch_size, 20, device=device),
                 model,
-                SimpleLossCompute(model.generator, criterion),
+                SimpleLossCompute(criterion),
                 optimizer,
                 lr_scheduler,
                 mode="train",
-                device=device,
             )
             model.eval()
             t = run_epoch(
-                data_gen(V, batch_size, 5),
+                data_gen(V, batch_size, 5, device=device),
                 model,
-                SimpleLossCompute(model.generator, criterion),
+                SimpleLossCompute(criterion),
                 DummyOptimizer(),
                 DummyScheduler(),
                 mode="eval",
-                device=device,
             )[0]
 
         model.eval()

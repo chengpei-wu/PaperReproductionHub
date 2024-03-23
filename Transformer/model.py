@@ -35,7 +35,9 @@ class Transformer(nn.Module):
         return decoder_output
 
     def forward(self, src, tgt, src_mask, tgt_mask):
-        return self.decode(tgt, self.encode(src, src_mask), src_mask, tgt_mask)
+        return self.generator(
+            self.decode(tgt, self.encode(src, src_mask), src_mask, tgt_mask)
+        )
 
     def reset_param(self):
         for p in self.parameters():
