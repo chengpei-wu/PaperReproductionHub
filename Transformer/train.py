@@ -1,5 +1,4 @@
 import os
-from distutils import dist
 from os.path import exists
 
 import spacy

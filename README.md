@@ -9,3 +9,5 @@ This repository is created for code reproduction of classical deep models or int
 - [Variational Graph Auto-Encoders](VGAE/README.md)
 - [Attention Is All You Need](Transformer/README.md)
 - [Auto-Encoding Variational Bayes](VAE/README.md)
+- [K-Means-numpy](numpy-K-means/README.md)
+- [MLP-numpy](numpy-MLP/README.md)

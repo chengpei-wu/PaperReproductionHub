@@ -9,4 +9,8 @@
 
 - torch
 
+## Demo of generated image from celeba dataset
+
+![](D:\WorkSpace\pythonProject\PaperReproductionHub\VAE\generated.jpg)
+
 

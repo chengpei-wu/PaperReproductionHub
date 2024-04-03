@@ -4,6 +4,7 @@ from torch.optim.lr_scheduler import LambdaLR
 
 from Transformer.model import Transformer
 from Transformer.train_utils import Batch
+from Transformer.train_utils import greedy_decode
 from Transformer.train_utils import run_epoch
 from Transformer.train_utils import subsequent_mask
 
@@ -30,30 +31,6 @@ class SimpleLossCompute:
             / norm
         )
         return sloss.data * norm, sloss
-
-
-# 0,1,2,3,4,5
-# 0,1,2,3,4
-# 1,2,3,4,5
-
-
-def greedy_decode(model, src, src_mask, max_len, start_symbol):
-    memory = model.encode(src, src_mask)
-    ys = torch.zeros(1, 1).fill_(start_symbol).type_as(src.data).to(device)
-    for i in range(max_len - 1):
-        out = model.decode(
-            ys,
-            memory,
-            src_mask,
-            subsequent_mask(ys.size(1)).type_as(src.data).to(device),
-        )
-        prob = model.generator(out[:, -1])
-        _, next_word = torch.max(prob, dim=1)
-        next_word = next_word.data[0]
-        ys = torch.cat(
-            [ys, torch.zeros(1, 1).type_as(src.data).fill_(next_word)], dim=1
-        )
-    return ys
 
 
 class LabelSmoothing(nn.Module):

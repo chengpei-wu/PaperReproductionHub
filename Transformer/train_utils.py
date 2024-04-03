@@ -100,5 +100,24 @@ def run_epoch(
     return total_loss / total_tokens, train_state
 
 
+def greedy_decode(model, src, src_mask, max_len, start_symbol):
+    memory = model.encode(src, src_mask)
+    ys = torch.zeros(1, 1).fill_(start_symbol).type_as(src.data).to(device)
+    for i in range(max_len - 1):
+        out = model.decode(
+            ys,
+            memory,
+            src_mask,
+            subsequent_mask(ys.size(1)).type_as(src.data).to(device),
+        )
+        prob = model.generator(out[:, -1])
+        _, next_word = torch.max(prob, dim=1)
+        next_word = next_word.data[0]
+        ys = torch.cat(
+            [ys, torch.zeros(1, 1).type_as(src.data).fill_(next_word)], dim=1
+        )
+    return ys
+
+
 if __name__ == "__main__":
     print(subsequent_mask(10))
