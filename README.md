@@ -11,3 +11,9 @@ This repository is created for code reproduction of classical deep models or int
 - [Auto-Encoding Variational Bayes](VAE/README.md)
 - [K-Means-numpy](numpy-K-means/README.md)
 - [MLP-numpy](numpy-MLP/README.md)
+- [Generative Adversarial Nets]()
+- [Graph Contrastive learning](https://github.com/chengpei-wu/GCL)
+  - Deep Graph Infomax
+  - InfoGraph: Unsupervised and Semi-supervised Graph-Level Representation Learning via Mutual Information Maximization]
+  - Deep Graph Contrastive Representation Learning]
+  - Contrastive Multi-View Representation Learning on Graphs]
