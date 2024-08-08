@@ -3,11 +3,12 @@ import torch
 import torch.nn as nn
 
 
+img_shape = (1, 28, 28)
+
+
 class Generator(nn.Module):
-    def __init__(self, z_dim=512, img_shape=(3, 64, 64)):
+    def __init__(self):
         super(Generator, self).__init__()
-        self.img_shape = img_shape
-        self.z_dim = z_dim
 
         def block(in_feat, out_feat, normalize=True):
             layers = [nn.Linear(in_feat, out_feat)]
@@ -17,7 +18,7 @@ class Generator(nn.Module):
             return layers
 
         self.model = nn.Sequential(
-            *block(z_dim, 128, normalize=False),
+            *block(128, 128, normalize=False),
             *block(128, 256),
             *block(256, 512),
             *block(512, 1024),
@@ -27,19 +28,18 @@ class Generator(nn.Module):
 
     def forward(self, z):
         img = self.model(z)
-        img = img.view(img.size(0), *self.img_shape)
+        # img = img.view(img.size(0), *img_shape)
         return img
 
-    def sample(self, device="cuda"):
-        z = torch.randn(1, self.z_dim).to(device)
-        x = self.model(z)
-        img = torch.reshape(x, (-1, *self.img_shape))
-        return img
+    def sample(self, device):
+        z = torch.randn(1, 128).to(device)
+        return self.model(z).reshape(1, 28, 28)
+
 
 class Discriminator(nn.Module):
-    def __init__(self, img_shape):
+    def __init__(self):
         super(Discriminator, self).__init__()
-        self.img_shape = img_shape
+
         self.model = nn.Sequential(
             nn.Linear(int(np.prod(img_shape)), 512),
             nn.LeakyReLU(0.2, inplace=True),
@@ -50,16 +50,14 @@ class Discriminator(nn.Module):
         )
 
     def forward(self, img):
-        img_flat = img.view(img.size(0), -1)
-        validity = self.model(img_flat)
-
+        # img_flat = img.view(img.size(0), -1)
+        validity = self.model(img)
         return validity
-
 
 
 if __name__ == '__main__':
     g = Generator()
-    z = torch.rand(2, 512)
+    z = torch.rand(2, 128)
     print(z.shape)
     img = g(z)
     print(img.shape)
